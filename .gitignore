@@ -1,0 +1,13 @@
+# Data files — never commit raw patient data (even synthetic)
+data/raw/*.csv
+data/raw/*.json
+data/synthea/*.csv
+data/synthea/*.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
