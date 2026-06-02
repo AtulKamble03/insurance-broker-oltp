@@ -341,3 +341,97 @@ When you work on an ETL project at Veradigm, the data starts in a system
 like the hospital database you're building here. Understanding both sides
 makes you a complete data engineer — not just someone who moves data,
 but someone who understands where it comes from and why it's structured that way.
+
+---
+
+### Phase 8 — Bridge: Feed COVID-19 Warehouse from Hospital OLTP
+**Status: 🔲 Not Started**
+
+**Pre-requisite:** Phase 7 complete + COVID-19 warehouse (covid_dw) running on same SQL Server.
+
+**Goal:** Generate COVID-19 patient visit data in the hospital OLTP system and feed it
+into the COVID-19 data warehouse — completing the full OLTP → ETL → OLAP lifecycle
+across two connected databases.
+
+**This is the most advanced phase — it proves you understand the entire data engineering stack.**
+
+#### 8.1 — Generate COVID Patient Data
+
+**Option A — Synthea COVID module (recommended):**
+- Run Synthea with the COVID-19 disease module
+- Generates patients with ICD-10 code `U07.1` (COVID-19 confirmed), hospitalizations,
+  medications (Paxlovid, Remdesivir), and vaccination records
+- Load into hospital_db using the migration scripts from Phase 2
+
+**Option B — Python generation:**
+- Generate synthetic COVID patient visits using Python Faker
+- Control: country, visit_date, ICD-10 code, hospitalized flag, vaccinated flag
+- Script saved at `scripts/generate/covid_visits.py`
+
+| Task | Done? |
+|---|---|
+| Choose data generation approach (Synthea or Python) | 🔲 |
+| Generate 10,000+ COVID patient visits across multiple countries | 🔲 |
+| Load into hospital_db OLTP tables | 🔲 |
+| Verify: COVID visits visible with ICD-10 = U07.1 | 🔲 |
+
+#### 8.2 — Write the Bridge ETL SQL
+
+| Task | Done? |
+|---|---|
+| Write `sql/analytical/bridge_to_covid_dw.sql` | 🔲 |
+| Aggregate hospital COVID visits → country × day counts | 🔲 |
+| Map hospital countries to `covid_dw.dim_location` (join on country name) | 🔲 |
+| Map hospital visit dates to `covid_dw.dim_date` (join on date) | 🔲 |
+| INSERT aggregated rows into `covid_dw.dbo.fact_covid_cases` | 🔲 |
+| Verify: new rows appear in COVID-19 warehouse | 🔲 |
+
+**The ETL query:**
+```sql
+-- Aggregate COVID patient visits from hospital OLTP
+-- Load into COVID-19 data warehouse
+INSERT INTO covid_dw.dbo.fact_covid_cases (record_year, location_id, date_id, new_cases)
+SELECT
+    YEAR(v.visit_date)   AS record_year,
+    l.location_id,
+    d.date_id,
+    COUNT(*)             AS new_cases      -- one patient visit = one new case
+FROM hospital_db.dbo.visits v
+JOIN hospital_db.dbo.visit_diagnoses vd ON vd.visit_id   = v.visit_id
+JOIN covid_dw.dbo.dim_location       l  ON l.country     = v.country
+JOIN covid_dw.dbo.dim_date           d  ON d.date        = v.visit_date
+WHERE vd.icd10_code = 'U07.1'            -- COVID-19 confirmed diagnosis
+GROUP BY YEAR(v.visit_date), l.location_id, d.date_id;
+```
+
+#### 8.3 — Verify End-to-End
+
+| Task | Done? |
+|---|---|
+| Run `EXEC covid_dw.dbo.usp_verify_etl_load` — all checks pass | 🔲 |
+| Run Report 3 (Cases Over Time) in SSMS — see hospital-sourced data | 🔲 |
+| Query: compare hospital case counts vs OWID counts for same country+date | 🔲 |
+| Open Power BI — refresh data — chart shows new data from hospital system | 🔲 |
+
+#### 8.4 — The Complete Architecture Diagram
+
+```
+Synthea COVID data
+      ↓
+hospital_db (OLTP)
+  visits + visit_diagnoses (U07.1)
+      ↓  Bridge ETL SQL (bridge_to_covid_dw.sql)
+covid_dw (OLAP)
+  fact_covid_cases ← NEW ROWS from hospital system
+      ↓
+EXEC usp_verify_etl_load → PASS
+      ↓
+Power BI report refreshed → hospital patient data visible in chart
+```
+
+**What this proves:**
+- You built the OLTP source system (hospital_db)
+- You built the ETL bridge (bridge SQL)
+- You built the OLAP warehouse (covid_dw)
+- Data flows end-to-end: patient visit → ETL → analytics
+- This is exactly what happens at Veradigm every night
