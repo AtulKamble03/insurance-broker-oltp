@@ -97,9 +97,9 @@ Mini star schema (dim_patient, dim_doctor, dim_date, fact_visits)
 #### 1.2 — Practice: Design the Schema
 | Task | Done? |
 |---|---|
-| Create `hospital_db` database in SSMS | 🔲 |
-| Write `sql/schema/create_tables.sql` — all 8 tables in 3NF | 🔲 |
-| Run DDL in SSMS — verify all tables, FKs, constraints created | 🔲 |
+| Create `hospital_db` database in SSMS | ✅ |
+| Write `sql/schema/create_tables.sql` — all 8 tables in 3NF | ✅ |
+| Run DDL in SSMS — verify all tables, FKs, constraints created | ✅ |
 | Draw ERD (Entity Relationship Diagram) showing all relationships | 🔲 |
 | Save ERD to `docs/architecture/erd.md` | 🔲 |
 
