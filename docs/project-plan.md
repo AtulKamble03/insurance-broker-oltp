@@ -79,19 +79,21 @@ Mini star schema (dim_patient, dim_doctor, dim_date, fact_visits)
 ---
 
 ### Phase 1 — Setup and Schema Design
-**Status: 🔲 Not Started**
+**Status: 🟡 In Progress**
 
 **Goal:** Understand normalisation by designing a proper 3NF hospital schema from scratch.
 
 **What we build:** 8 interconnected tables representing a hospital OLTP system.
 
 #### 1.1 — Theory: Understand Normalisation
+Partially covered via embedded theory comments in the migration scripts (02_migrate_to_3nf.sql).
+
 | Task | Done? |
 |---|---|
 | Learn what anomalies are (update, insert, delete) | 🔲 |
-| Understand 1NF — atomic values, no repeating groups | 🔲 |
-| Understand 2NF — no partial dependencies | 🔲 |
-| Understand 3NF — no transitive dependencies | 🔲 |
+| Understand 1NF — atomic values, no repeating groups | ✅ (junction table concept — visit_diagnoses, Step 2.7) |
+| Understand 2NF — no partial dependencies | ✅ (prescriptions — dosage depends on visit+medication, Step 2.8) |
+| Understand 3NF — no transitive dependencies | ✅ (zip_codes — city/state depend on ZIP not patient_id, Step 2.1) |
 | Read through `docs/learning-plan.md` — Phase 1 section | 🔲 |
 
 #### 1.2 — Practice: Design the Schema
@@ -103,7 +105,7 @@ Mini star schema (dim_patient, dim_doctor, dim_date, fact_visits)
 | Draw ERD (Entity Relationship Diagram) showing all relationships | 🔲 |
 | Save ERD to `docs/architecture/erd.md` | 🔲 |
 
-**Tables to create:**
+**Tables created:**
 ```
 zip_codes          (reference table)
 patients           → references zip_codes
@@ -115,26 +117,26 @@ medications
 prescriptions      → references visits + medications
 ```
 
-**Next action:** Create `hospital_db` in SSMS and run `sql/schema/create_tables.sql`
+**Next action:** ERD — draw relationships between all 8 tables and save to `docs/architecture/erd.md`
 
 ---
 
 ### Phase 2 — Load Synthea Data (Data Migration)
-**Status: 🔲 Not Started**
+**Status: 🟡 In Progress — Scripts written, not yet run in SSMS**
 
-**Pre-requisite:** Phase 1 complete — all 8 tables exist in hospital_db.
+**Pre-requisite:** Phase 1 complete — all 8 tables exist in hospital_db. ✅
 
 **Goal:** Understand data migration by loading messy Synthea CSV data into the normalised schema.
 
-#### 2.1 — Download Synthea Data
+#### 2.1 — Download and Prepare Synthea Data
 | Task | Done? |
 |---|---|
-| Download pre-generated Synthea dataset (100 patients) from synthea.mitre.org | 🔲 |
-| Extract CSV files to `data/synthea/` folder | 🔲 |
-| Open each CSV in Excel — understand what columns exist | 🔲 |
-| Map Synthea columns to our 3NF tables (write mapping document) | 🔲 |
+| Download Synthea JAR (`synthea-with-dependencies.jar`) | ✅ |
+| Run Synthea — generate 1000 patients (1157 total incl. deceased) | ✅ |
+| Extract CSV files to `data/synthea/csv/` folder | ✅ |
+| Map Synthea columns to 3NF tables (captured in migration script comments) | ✅ |
 
-**Synthea files we use:**
+**Synthea files generated:**
 ```
 patients.csv    → patients + zip_codes
 providers.csv   → doctors
@@ -143,24 +145,37 @@ conditions.csv  → visit_diagnoses + diagnoses
 medications.csv → prescriptions + medications
 ```
 
-#### 2.2 — Create Legacy Flat Table
+#### 2.2 — Create Staging Schema
+Approach: used a `staging` schema with 5 typed tables (not one flat table) — cleaner for profiling per entity.
+
 | Task | Done? |
 |---|---|
-| Write `sql/migration/legacy_table.sql` — one big denormalised table | 🔲 |
-| Load raw Synthea data into the legacy table | 🔲 |
+| Write `sql/migration/00_create_legacy_staging.sql` — staging schema + 5 raw tables | ✅ |
+| Run script in SSMS — create staging schema | 🔲 |
 | Profile the data — nulls, duplicates, formats, anomalies | 🔲 |
 | Document findings in `docs/architecture/data-profiling.md` | 🔲 |
 
-#### 2.3 — Migrate to 3NF
+#### 2.3 — Bulk Load Staging
 | Task | Done? |
 |---|---|
-| Write `sql/migration/01_load_zip_codes.sql` | 🔲 |
-| Write `sql/migration/02_load_patients.sql` | 🔲 |
-| Write `sql/migration/03_load_doctors.sql` | 🔲 |
-| Write `sql/migration/04_load_diagnoses.sql` | 🔲 |
-| Write `sql/migration/05_load_visits.sql` | 🔲 |
-| Write `sql/migration/06_load_medications.sql` | 🔲 |
-| Write `sql/migration/07_load_prescriptions.sql` | 🔲 |
+| Write `sql/migration/01_bulk_load_staging.sql` — BULK INSERT all 5 CSVs | ✅ |
+| Run script in SSMS — load all 5 staging tables | 🔲 |
+| Verify row counts in staging (SELECT COUNT from each table) | 🔲 |
+
+#### 2.4 — Migrate to 3NF
+All 8 steps combined in `sql/migration/02_migrate_to_3nf.sql` (one file per step is overkill for learning).
+
+| Task | Done? |
+|---|---|
+| Write migration for zip_codes (2.1 in script) | ✅ |
+| Write migration for patients (2.2 in script) | ✅ |
+| Write migration for doctors (2.3 in script) | ✅ |
+| Write migration for diagnoses (2.4 in script) | ✅ |
+| Write migration for medications (2.5 in script) | ✅ |
+| Write migration for visits (2.6 in script) | ✅ |
+| Write migration for visit_diagnoses (2.7 in script) | ✅ |
+| Write migration for prescriptions (2.8 in script) | ✅ |
+| Run `02_migrate_to_3nf.sql` in SSMS | 🔲 |
 | Write `tests/validate_migration.sql` — row counts, FK checks | 🔲 |
 | Run validation — all checks pass | 🔲 |
 

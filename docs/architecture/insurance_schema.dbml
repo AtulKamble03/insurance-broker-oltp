@@ -1,0 +1,337 @@
+// Insurance Broker OLTP Schema
+// Tool: https://dbdiagram.io
+// Last updated: 2026-06-08
+
+Table broker {
+  broker_id integer [primary key]
+  broker_name varchar [not null]
+  license_number varchar [unique]
+  registration_date date
+  contact_email varchar
+  contact_phone varchar
+  website_url varchar
+  status varchar [default: 'active']
+  created_at timestamp
+}
+
+Table insurancecompany {
+  company_id integer [primary key]
+  company_name varchar
+  license_number varchar
+  registration_date date
+  contact_email varchar
+  contact_phone varchar
+  status varchar [default: 'active']
+  created_at timestamp
+}
+
+Table brokerinsurancecompany {
+  broker_company_id integer [primary key]
+  broker_id integer
+  company_id integer
+  onboarded_date date
+  commission_rate float
+  status varchar [default: 'active']
+  created_at timestamp
+}
+
+Table insuranceplan {
+  plan_id integer [primary key]
+  company_id integer
+  plan_name varchar
+  plan_type varchar
+  coverage_type varchar
+  premium_amount decimal
+  deductible_amount decimal
+  coverage_period_years integer
+  valid_from date
+  valid_to date
+  status varchar [default: 'active']
+  created_at timestamp
+}
+
+Table customer {
+  customer_id integer [primary key]
+  broker_id integer
+  full_name varchar
+  dob date
+  gender varchar
+  is_tobacco_user boolean [default: false]
+  is_alcohol_user boolean [default: false]
+  government_id varchar [unique]
+  contact_email varchar
+  contact_phone varchar
+  address varchar
+  kyc_status varchar
+  status varchar [default: 'active']
+  created_at timestamp
+}
+
+Table dependent {
+  dependent_id integer [primary key]
+  customer_id integer
+  full_name varchar
+  dob date
+  gender varchar
+  relationship varchar
+  government_id varchar
+  status varchar [default: 'active']
+  created_at timestamp
+}
+
+Table quote {
+  quote_id integer [primary key]
+  customer_id integer
+  plan_id integer
+  quoted_premium decimal
+  coverage_period_years integer
+  valid_from date
+  valid_to date
+  status varchar [default: 'draft']
+  created_at timestamp
+}
+
+Table application {
+  application_id integer [primary key]
+  quote_id integer
+  customer_id integer
+  plan_id integer
+  submitted_at timestamp
+  reviewed_at timestamp
+  decision_at timestamp
+  status varchar [default: 'submitted']
+  rejection_reason varchar
+  created_at timestamp
+}
+
+Table enrollment {
+  enrollment_id integer [primary key]
+  application_id integer
+  customer_id integer
+  plan_id integer
+  enrollment_date date
+  start_date date
+  end_date date
+  premium_amount decimal
+  payment_frequency varchar
+  status varchar [default: 'active']
+  created_at timestamp
+}
+
+Table policy {
+  policy_id integer [primary key]
+  policy_number varchar [unique, not null]
+  enrollment_id integer
+  customer_id integer
+  plan_id integer
+  issued_date date
+  start_date date
+  end_date date
+  premium_amount decimal
+  deductible_remaining decimal
+  next_renewal_date date
+  status varchar [default: 'active']
+  created_at timestamp
+}
+
+Table policydependent {
+  id integer [primary key]
+  policy_id integer
+  dependent_id integer
+  added_date date
+  status varchar [default: 'active']
+}
+
+Table claim {
+  claim_id integer [primary key]
+  claim_number varchar [unique, not null]
+  policy_id integer
+  customer_id integer
+  provider_id integer
+  service_date date
+  submission_date date
+  treatment_type varchar
+  claim_type varchar
+  diagnosis_code varchar
+  total_claimed_amount decimal
+  approved_amount decimal
+  deductible_applied decimal
+  customer_payable decimal
+  insurance_payable decimal
+  reviewed_at timestamp
+  settled_at timestamp
+  rejection_reason varchar
+  status varchar [default: 'submitted']
+  created_at timestamp
+}
+
+Table premiumpayment {
+  premium_payment_id integer [primary key]
+  policy_id integer
+  customer_id integer
+  amount_due decimal
+  amount_paid decimal
+  remaining_balance decimal
+  payment_date date
+  due_date date
+  payment_method varchar
+  transaction_reference varchar [unique]
+  status varchar [default: 'pending']
+  created_at timestamp
+}
+
+Table claimpayment {
+  claim_payment_id integer [primary key]
+  claim_id integer
+  customer_id integer
+  amount_approved decimal
+  amount_paid decimal
+  remaining_balance decimal
+  payment_date date
+  payment_method varchar
+  transaction_reference varchar [unique]
+  status varchar [default: 'pending']
+  created_at timestamp
+}
+
+Table commission {
+  commission_id integer [primary key]
+  broker_id integer
+  company_id integer
+  enrollment_id integer
+  policy_id integer
+  commission_rate decimal
+  commission_amount decimal
+  amount_paid decimal
+  amount_pending decimal
+  payment_date date
+  status varchar [default: 'pending']
+  created_at timestamp
+}
+
+Table provider {
+  provider_id integer [primary key]
+  provider_name varchar [not null]
+  provider_type varchar
+  specialty varchar
+  license_number varchar [unique]
+  contact_email varchar
+  contact_phone varchar
+  address varchar
+  status varchar [default: 'active']
+  created_at timestamp
+}
+
+Table network {
+  network_id integer [primary key]
+  company_id integer
+  network_name varchar [not null]
+  network_type varchar
+  status varchar [default: 'active']
+  created_at timestamp
+}
+
+Table providernetwork {
+  id integer [primary key]
+  provider_id integer
+  network_id integer
+  joined_date date
+  contract_start date
+  contract_end date
+  is_active boolean [default: true]
+  created_at timestamp
+}
+
+Table customereligibility {
+  eligibility_id integer [primary key]
+  customer_id integer
+  plan_id integer
+  age_criteria_met boolean
+  has_existing_policy boolean
+  pre_existing_conditions varchar
+  tobacco_criteria_met boolean
+  location_criteria_met boolean
+  eligibility_date date
+  status varchar [default: 'pending']
+  created_at timestamp
+}
+
+Table providereligibility {
+  eligibility_id integer [primary key]
+  provider_id integer
+  network_id integer
+  license_valid boolean
+  specialty_match boolean
+  coverage_area varchar
+  eligibility_date date
+  status varchar [default: 'pending']
+  created_at timestamp
+}
+
+Table contract {
+  contract_id integer [primary key]
+  contract_number varchar [unique, not null]
+  company_id integer
+  provider_id integer
+  contract_type varchar
+  start_date date
+  end_date date
+  renewal_date date
+  terms varchar
+  reimbursement_rate decimal
+  status varchar [default: 'active']
+  created_at timestamp
+}
+
+Table proofdocument {
+  document_id integer [primary key]
+  application_id integer
+  claim_id integer
+  document_type varchar
+  document_url varchar
+  uploaded_at timestamp
+  verified_at timestamp
+  status varchar [default: 'pending']
+}
+
+// References
+Ref: insurancecompany.company_id > brokerinsurancecompany.company_id
+Ref: broker.broker_id > brokerinsurancecompany.broker_id
+Ref: customer.broker_id > broker.broker_id
+Ref: insurancecompany.company_id < insuranceplan.company_id
+Ref: customer.customer_id < dependent.customer_id
+Ref: customer.customer_id < quote.customer_id
+Ref: quote.plan_id < insuranceplan.plan_id
+Ref: quote.quote_id > application.quote_id
+Ref: application.plan_id > insuranceplan.plan_id
+Ref: application.customer_id > customer.customer_id
+Ref: policydependent.policy_id < policy.policy_id
+Ref: dependent.dependent_id < policydependent.dependent_id
+Ref: policy.enrollment_id - enrollment.enrollment_id
+Ref: customer.customer_id < policy.customer_id
+Ref: policy.plan_id < insuranceplan.plan_id
+Ref: enrollment.application_id - application.application_id
+Ref: customer.customer_id < enrollment.customer_id
+Ref: enrollment.plan_id < insuranceplan.plan_id
+Ref: claim.claim_id - claimpayment.claim_id
+Ref: customer.customer_id < claimpayment.customer_id
+Ref: policy.policy_id < claim.policy_id
+Ref: customer.customer_id < claim.customer_id
+Ref: provider.provider_id < claim.provider_id
+Ref: policy.policy_id < premiumpayment.policy_id
+Ref: customer.customer_id < premiumpayment.customer_id
+Ref: broker.broker_id < commission.broker_id
+Ref: insurancecompany.company_id < commission.company_id
+Ref: enrollment.enrollment_id < commission.enrollment_id
+Ref: policy.policy_id < commission.policy_id
+Ref: insurancecompany.company_id < network.company_id
+Ref: provider.provider_id < providernetwork.provider_id
+Ref: network.network_id < providernetwork.network_id
+Ref: customer.customer_id < customereligibility.customer_id
+Ref: insuranceplan.plan_id < customereligibility.plan_id
+Ref: provider.provider_id < providereligibility.provider_id
+Ref: network.network_id < providereligibility.network_id
+Ref: insurancecompany.company_id < contract.company_id
+Ref: provider.provider_id < contract.provider_id
+Ref: application.application_id < proofdocument.application_id
+Ref: claim.claim_id < proofdocument.claim_id

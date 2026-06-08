@@ -1,8 +1,11 @@
 # Data files — never commit raw patient data (even synthetic)
-data/raw/*.csv
-data/raw/*.json
+data/raw/
+data/synthea/csv/
+data/synthea/fhir/
+data/synthea/metadata/
 data/synthea/*.csv
 data/synthea/*.json
+data/*.jar
 
 # OS
 .DS_Store
