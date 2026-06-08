@@ -1,101 +1,118 @@
-# Hospital Patient Records — OLTP Learning Project
+# Insurance Broker OLTP — Learning Project
 
-A hands-on learning project to understand **transactional database design**,
-**normalisation**, **ACID transactions**, **CDC**, and **OLTP → Data Warehouse migration**.
+A hands-on project to understand **transactional database design** for a real-world
+insurance broker system — covering normalisation, ACID transactions, concurrency,
+and OLTP fundamentals.
 
-Built alongside the [COVID-19 ETL Data Warehouse project](https://github.com/AtulKamble03/covid-etl-project)
-to understand both sides of the data engineering stack.
+Built alongside the [COVID-19 ETL Data Warehouse](https://github.com/AtulKamble03/covid-etl-project)
+to understand both sides of the data engineering stack — the OLTP source and the OLAP warehouse.
+
+---
+
+## Domain
+
+An insurance broker connects customers to insurance companies and plans.
+The system tracks the full lifecycle:
+
+```
+Broker → Customer → Quote → Application → Enrollment → Policy → Claims → Payments
+```
 
 ---
 
 ## What You Will Learn
 
-| Phase | Topic | Key Concepts |
+| Phase | Topic | Status |
 |---|---|---|
-| 1 | Normalisation | 1NF → 3NF, anomalies, schema design |
-| 2 | ACID Transactions | Atomicity, consistency, isolation, durability |
-| 3 | Concurrency | Isolation levels, locking, deadlock detection |
-| 4 | Data Migration | Legacy → 3NF, transformation, validation |
-| 5 | CDC | Change Data Capture, feeding ETL pipelines |
-| 6 | OLTP vs OLAP | Same data, two different schemas, different purposes |
+| 1 | OLTP Concepts | ✅ Complete |
+| 2 | SQL DDL — Create tables with constraints and indexes | 🔲 Next |
+| 3 | Test Data — Insert seed data, understand pre/post states | 🔲 Upcoming |
+| 4 | ACID Transactions — Write and test real transaction SQL | 🔲 Upcoming |
+| 5 | Advanced OLTP — Triggers, deadlocks, isolation levels in action | 🔲 Upcoming |
+| 6 | CDC — Change Data Capture, feed to a data warehouse | 🔲 Future |
 
 ---
 
 ## Tech Stack
 
-| Tool | Purpose | Cost |
-|---|---|---|
-| SQL Server Developer Edition | OLTP database | Free |
-| SSMS | Query and manage | Free |
-| Synthea | Synthetic patient data generator | Free (Apache 2.0) |
-| Python (optional) | Generate additional synthetic data | Free |
+| Tool | Purpose |
+|---|---|
+| SQL Server Developer Edition | OLTP database |
+| SSMS | Query, manage, test |
+| dbdiagram.io | Schema design (DBML) |
+| GitHub | Version control |
 
 ---
 
-## Data Source
+## Schema
 
-**Synthea** — open-source synthetic patient generator by MITRE Corporation.
-- License: Apache 2.0 — no restrictions
-- No real patients — 100% synthetic, HIPAA-safe
-- Generates: patients, encounters, conditions, medications, providers
-- Download: [synthea.mitre.org](https://synthea.mitre.org)
+**21 tables** covering the full insurance broker domain.
 
----
+```
+broker              insurancecompany     insuranceplan
+customer            dependent            customereligibility
+quote               application          enrollment
+policy              policydependent      proofdocument
+claim               claimpayment         premiumpayment
+commission          provider             providereligibility
+network             providernetwork      contract
+```
 
-## Project Phases
-
-### Phase 1 — Schema Design (3NF)
-Design and create a normalised hospital database:
-- `patients`, `doctors`, `visits`, `diagnoses`, `medications`, `prescriptions`
-- Proper FK relationships, CHECK constraints, indexes
-
-### Phase 2 — Load Synthea Data
-Load synthetic patient data and map it to the 3NF schema.
-Learn data transformation and migration from a flat/denormalised source.
-
-### Phase 3 — ACID Transactions
-Write SQL transactions for real hospital operations:
-- Admit patient, record diagnosis, prescribe medication — all or nothing
-- Test rollback scenarios
-
-### Phase 4 — Change Data Capture (CDC)
-Enable CDC on key tables. Capture INSERT/UPDATE/DELETE events.
-Understand how OLTP systems feed ETL pipelines.
-
-### Phase 5 — Mini Data Warehouse
-Build a simple star schema from the OLTP tables.
-Compare query complexity: 3NF (8 joins) vs star schema (2 joins).
+Full schema: [`docs/architecture/insurance_schema.dbml`](docs/architecture/insurance_schema.dbml)
 
 ---
 
 ## Repo Structure
 
 ```
-hospital-oltp-project/
-├── data/
-│   ├── raw/           # Original Synthea output (not committed)
-│   └── synthea/       # Processed CSV files (not committed)
+insurance-broker-oltp/
 ├── sql/
-│   ├── schema/        # CREATE TABLE scripts (3NF design)
-│   ├── migration/     # Legacy → 3NF migration scripts
-│   ├── transactions/  # ACID transaction examples
+│   ├── schema/        # CREATE TABLE scripts with constraints and indexes
+│   ├── transactions/  # ACID transaction examples (pre/post state demos)
 │   ├── cdc/           # Change Data Capture setup and queries
-│   └── analytical/    # Mini star schema + analytical queries
+│   └── analytical/    # Analytical queries
 ├── docs/
-│   └── architecture/  # ERD, design decisions, learning notes
-├── scripts/
-│   └── generate/      # Python scripts to generate additional data
+│   ├── concepts.md           # 16 core OLTP concepts with insurance examples
+│   ├── project-plan.md       # Phase-by-phase plan with task status
+│   ├── learning-plan.md      # Learning objectives per phase
+│   └── architecture/
+│       └── insurance_schema.dbml   # Full 21-table schema (dbdiagram.io)
 └── tests/             # Validation queries
 ```
 
 ---
 
-## OLTP vs OLAP — Quick Comparison
+## Key Reference
+
+[`docs/concepts.md`](docs/concepts.md) — 16 OLTP concepts explained in plain English
+with examples from this schema. Use this as your reference throughout the project.
+
+| Concept | One line |
+|---|---|
+| Denormalization | Store redundant FK to avoid joins |
+| Atomicity | All steps succeed or all are undone |
+| Consistency | Constraints keep data always valid |
+| Isolation | Concurrent users don't corrupt each other |
+| Durability | Committed data survives crashes |
+| Foreign Keys | Child row must point to a real parent |
+| Normalization | Eliminate redundancy — 1NF → 2NF → 3NF |
+| Soft Delete | Status = 'inactive', never hard delete |
+| Indexes | Speed up lookups on WHERE/JOIN columns |
+| Locking | Exclusive access during writes |
+| Isolation Levels | READ COMMITTED is the safe default |
+| Deadlocks | Always access tables in the same order |
+| Triggers | Automate actions on INSERT/UPDATE/DELETE |
+| Cascading | Propagate changes to child rows |
+
+---
+
+## OLTP vs OLAP — How This Connects to the COVID-19 Project
 
 | | This Project (OLTP) | COVID-19 Warehouse (OLAP) |
 |---|---|---|
-| Schema | 8 normalised tables (3NF) | 5 tables (star schema) |
 | Purpose | Record daily operations | Analyse historical data |
+| Schema style | Normalised (3NF) | Star schema (Kimball) |
 | Transactions | ACID required | Bulk load only |
-| Query pattern | Precise row lookups | Millions-row aggregations |
-| Users | Doctors, nurses (1000+) | Analysts (10-20) |
+| Users | Agents, brokers (1000s) | Analysts (10-20) |
+| Query pattern | Single row lookups | Millions-row aggregations |
+| Source of data | This system IS the source | Reads from systems like this |
